@@ -8,9 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "Pool Visualizer",
-        short_name: "Pool",
-        description: "Billiards shot visualizer",
+        name: "Billiard Shot Lab",
+        short_name: "Shot Lab",
+        description: "Interactive pool shot simulator with real physics — spin, cushion bounces, throw, and english.",
         theme_color: "#1a1a2e",
         background_color: "#1a1a2e",
         display: "standalone",
