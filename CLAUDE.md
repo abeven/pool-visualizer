@@ -5,10 +5,10 @@ Interactive pool/billiards shot simulator and trajectory visualizer.
 ## Stack
 
 - React 19 + Vite 7 (no TypeScript, no CSS files)
-- UI/rendering in `src/App.jsx` (~720 lines), physics engine in `src/physics/` (~1230 lines)
+- UI/rendering in `src/App.jsx` (~980 lines), physics engine in `src/physics/` (~1285 lines)
 - All styling is inline (no CSS framework, no styled-components)
 - SVG-based rendering (not Canvas)
-- PWA via `vite-plugin-pwa` with auto-update
+- PWA via `vite-plugin-pwa` with auto-update (PNG icons required for mobile install)
 - Deployed to Surge: `pool-visualizer.surge.sh`
 
 ## Commands
@@ -27,8 +27,10 @@ Rendering lives in `src/App.jsx`. Physics lives in `src/physics/`. No routing, n
 1. **Constants** — `TABLE_SIZES`, `RAIL`, `BALL_R`, `POCKET_R` (pixel-space layout constants)
 2. **`SpinSelector`** — draggable circular pad component for cue tip position
 3. **`PathGlow`** — SVG path renderer with glow effect
-4. **`FELT_QUALITY`** — config object for Pro/Nice/Dive felt presets (colors for rendering; physics friction is in `src/physics/constants.js`)
-5. **`PoolVisualizer`** — main component with all state, event handlers, animation loop, and render
+4. **`deflAt` / `findImpacts`** — detect direction changes in trajectory paths, identify cushion vs ball-ball impacts by proximity to rails, find the peak deflection point in each cluster
+5. **`svgArc` / `normAngle` / `ImpactAngles`** — angle visualization at impact points. Cushion hits show two angles measured from the rail surface (incoming and outgoing). Ball-ball hits show a single deflection angle.
+6. **`FELT_QUALITY`** — config object for Pro/Nice/Dive felt presets (colors for rendering; physics friction is in `src/physics/constants.js`)
+7. **`PoolVisualizer`** — main component with all state, event handlers, animation loop, and render
 
 `simulateShot()` is imported from `src/physics/index.js`. It returns `{ cuePath, targetPath, hitPoint, cuePocketed, targetPocketed }` in pixel coordinates, same interface the renderer expects.
 
@@ -42,7 +44,7 @@ Event-based simulation ported from [pooltool](https://github.com/ekiefl/pooltool
 | `utils.js` | 3D vector math, surface velocity, quadratic/cubic/quartic polynomial solvers |
 | `evolve.js` | Analytical equations of motion per state (Coulomb friction), transition time calculations, motion coefficients for event detection |
 | `collisions.js` | Ball-ball (quartic detection, impulse+throw resolution), ball-cushion (quadratic detection, simplified Han 2005), ball-pocket (quartic), cue strike model |
-| `engine.js` | Event-based loop: predict next event analytically → evolve all balls → resolve → repeat. Also builds table geometry (cushion segments, pockets) |
+| `engine.js` | Event-based loop: predict next event analytically → evolve all balls → resolve → repeat. Also builds table geometry (cushion segments, pockets). Includes fallback pocket detection after each evolution step. |
 | `index.js` | Public API: `simulateShot()` with pixel↔SI conversion, trajectory sampling from event snapshots |
 
 Key physics concepts:
@@ -53,7 +55,7 @@ Key physics concepts:
 - **Felt presets** map to real physical coefficients (μ_s, μ_r, e_c, f_c) in `FELT_PHYSICS`
 
 Known limitations:
-- Quartic solver (Ferrari's method) can produce spurious roots — mitigated by polynomial evaluation verification in `smallestPositiveRoot()`
+- Quartic solver (Ferrari's method) can produce spurious roots — mitigated by polynomial evaluation verification in `smallestPositiveRoot()`. Missed pocket collisions are caught by a fallback position check in the event loop.
 - Only 2 balls (cue + target); multi-ball requires extending `engine.js` loop (already N-ball capable) and rendering
 - Cushion model is simplified Han 2005 (reflection + friction), not full compression/restitution
 - No masse/jump shots (no airborne state)
@@ -65,6 +67,7 @@ Known limitations:
 - Balls rendered with gradients, clip paths, and rotation animation
 - Trajectory shown as dashed paths (blue for cue, orange for target)
 - Frame-based animation using `requestAnimationFrame` at 8ms per path sample
+- Impact angles shown at cushion and ball-ball collision points
 
 ### Controls
 
